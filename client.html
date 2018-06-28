@@ -1,0 +1,99 @@
+<html><head><title>WebSocket</title>
+<style type="text/css">
+html,body {
+	font:normal 0.9em arial,helvetica;
+}
+#log {
+	width:180px; 
+	height:80%; 
+	border:1px solid #7F9DB9; 
+	overflow:auto;
+}
+#msg {
+	width:180px;
+}
+</style>
+<script type="text/javascript">
+var socket;
+var username = "noname";
+var d = new Date(); // for now
+var logdiv = document.getElementById("log");
+logdiv.scrollIntoView(false);
+
+function get_time()
+{
+	return d.getHours()+ ":"+ d.getMinutes();
+}
+
+function init() {
+	var host = "ws://vps539065.ovh.net:9000/echobot"; // SET THIS TO YOUR SERVER
+	try {
+		socket = new WebSocket(host);
+		//log('WebSocket - status '+socket.readyState);
+		socket.onopen    = function(msg) { 
+							   log(get_time()+": Connected"); 
+						   };
+		socket.onmessage = function(msg) {
+								data = JSON.parse(msg.data);
+							   log(get_time()+": "+ data.username+": "+data.text);
+							  // logdiv.scrollTop = logdiv.scrollHeight;
+							   console.log(msg);
+						   };
+		socket.onclose   = function(msg) { 
+							   log("Disconnected"); 
+						   };
+	}
+	catch(ex){ 
+		log(ex); 
+	}
+	$("msg").focus();
+}
+
+function send(){
+	var txt,msg;
+	txt = $("msg");
+	msg = txt.value;
+	var data = { text: msg, username: username};
+	if(!msg) { 
+		alert("Message can not be empty"); 
+		return; 
+	}
+	txt.value="";
+	txt.focus();
+	try { 
+		socket.send(JSON.stringify(data)); 
+		//log('Sent: '+JSON.stringify(data)); 
+	} catch(ex) { 
+		log(ex); 
+	}
+}
+function quit(){
+	if (socket != null) {
+		log("Goodbye!");
+		socket.close();
+		socket=null;
+	}
+}
+
+function reconnect() {
+	quit();
+	init();
+}
+
+// Utilities
+function $(id){ return document.getElementById(id); }
+function log(msg){ $("log").innerHTML+="<br>"+msg; }
+function onkey(event){ if(event.keyCode==13){ send(); } }
+</script>
+
+</head>
+<body onload="init()">
+
+<div id="log"></div>
+<input id="msg" type="textbox" onkeypress="onkey(event)"/>
+<button onclick="send()">Send</button>
+<button onclick="quit()">Quit</button>
+<button onclick="reconnect()">Reconnect</button>
+Username: <input type="text" id="username"/><button onclick="username = $('username').value">Zmień nick</button>
+</body>
+</html>
